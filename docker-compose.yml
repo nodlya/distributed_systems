@@ -12,12 +12,23 @@ services:
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
+      - API_URL=${API_URL}
+      - RABBIT_HOST=${RABBIT_HOST}
+      - REDIS_HOST=${REDIS_HOST}
 
   generate_pic_service:
     build: 
       context: ./generate_pic_service
     ports:
       - 8001:8001
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - RABBIT_HOST=${RABBIT_HOST}
+      - REDIS_HOST=${REDIS_HOST}
 
   db:
     image: postgres
@@ -26,6 +37,12 @@ services:
       POSTGRES_PASSWORD: password
     ports:
       - 5432:5432
+
+  redis:
+    image: redis
+    hostname: redis
+    ports:
+      - 6379:6379
 
      
 
