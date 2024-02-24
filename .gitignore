@@ -6,5 +6,7 @@ venv/
 env/
 .venv/
 
+.env
+
 .vscode/
 *.code-workspace
