@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  texts_service:
+    build: 
+      context: ./texts_service
+    ports:
+      - 8000:8000
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+
+  db:
+    image: postgres
+    container_name: postgres1
+    environment:
+      POSTGRES_PASSWORD: password
+    ports:
+      - 5432:5432
+
+     
+
+  
