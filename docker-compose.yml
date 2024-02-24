@@ -13,6 +13,12 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
 
+  generate_pic_service:
+    build: 
+      context: ./generate_pic_service
+    ports:
+      - 8001:8001
+
   db:
     image: postgres
     container_name: postgres1
