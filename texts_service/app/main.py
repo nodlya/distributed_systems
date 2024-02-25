@@ -8,6 +8,7 @@ import pybase64
 import asyncpg
 import redis
 import requests
+import pika
 
 app = FastAPI()
 
@@ -34,6 +35,20 @@ async def create_table(conn):
     pic TEXT
     );'''
     await conn.execute(query)
+    
+def generate_pic_queue(id: int, description: str):
+    message_body = str({'id': id, 'description':  description})
+    try:
+        with pika.BlockingConnection(pika.ConnectionParameters(host=rabbit_host)) as connection:
+            channel = connection.channel()
+            channel.queue_declare(queue='generate_pic')
+            channel.basic_publish(exchange='',
+                            routing_key='generate_pic',
+                            body=message_body)
+            logging.warning(f'{message_body} sent!')
+    except Exception as e:
+        logging.error(e, exc_info=True)
+
 
 
 @app.post('/create_text')
@@ -47,8 +62,10 @@ async def create_text(data: Text):
         logging.warning(row)
         inserted_id = row['id']
         await conn.close()
-        result = requests.get(f'{url}/generate_pic', params={'id': inserted_id, 'prompt': data.description})
-        logging.warning(result)
+        
+        generate_pic_queue(inserted_id, data.description)
+        # result = requests.get(f'{url}/generate_pic', params={'id': inserted_id, 'prompt': data.description})
+        # logging.warning(result)
         return inserted_id
     except Exception as e:
         logging.error(e, exc_info=True)

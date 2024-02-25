@@ -19,6 +19,7 @@ services:
   generate_pic_service:
     build: 
       context: ./generate_pic_service
+    restart: always
     ports:
       - 8001:8001
     environment:
@@ -43,6 +44,13 @@ services:
     hostname: redis
     ports:
       - 6379:6379
+
+  rabbitmq:
+    image: rabbitmq:3.10.7-management
+    hostname: rabbitmq
+    restart: always
+    ports:
+      - 15672:15672
 
      
 

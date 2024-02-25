@@ -10,6 +10,10 @@ import requests
 import redis
 import asyncpg
 import chardet
+import pika
+import ast
+import aio_pika
+import asyncio
 
 
 class Text(BaseModel):
@@ -74,28 +78,53 @@ r = redis.Redis(host=redis_host, port=6379, decode_responses=True)
 logging.warning(r)
 
 
+async def update_db(images, id):
+    conn = await asyncpg.connect(user=db_user, password=db_password, database=db_name, host=db_host)
+    row = await conn.execute(f'UPDATE texts SET pic = $1 WHERE id=$2', images[0], id)
+    await conn.close()
+
 @app.get('/generate_pic')
-async def generate_pic(id:int, prompt: str):
+async def generate_pic(id:int, description: str):
     api = Text2ImageAPI('https://api-key.fusionbrain.ai/', '5BE53FCEB1AE2634CCC69B87CD015EE7', '3E12646F716819AD9BE4515B752C29BD')
     model_id = api.get_model()
-    uuid = api.generate(prompt, model_id)
+    uuid = api.generate(description, model_id)
     images = api.check_generation(uuid)
     logging.warning(type(images[0]))
     detected_encoding = chardet.detect(images[0].encode())
     detected_encoding_name = detected_encoding['encoding']
     logging.warning(detected_encoding_name)
     
+    r.set(id, images[0])
+    update_db(images, id)
+    
     image = pybase64.b64decode(images[0])
     
-    r.set(id, images[0])
-    
-    conn = await asyncpg.connect(user=db_user, password=db_password, database=db_name, host=db_host)
-    row = await conn.execute(f'UPDATE texts SET pic = $1 WHERE id=$2', images[0], id)
-    await conn.close()
-    
     return Response(content=image, media_type='image/png')
+
 
 @app.get('/see_pic')
 async def get_pic_from_redis(id: int):
     image = pybase64.b64decode(r.get(id))
     return Response(content=image, media_type='image/png')
+
+async def callback(ch, method, properties, body):
+    logging.warning('Message received, callback!')
+    received_text = ast.literal_eval(body.decode('utf-8'))
+    logging.warning(received_text)
+    generate_pic(**received_text)
+    
+
+
+async def consume_messages():
+    connection = await aio_pika.connect_robust(f"amqp://guest:guest@{rabbit_host}/")
+    async with connection:
+        channel = await connection.channel()
+        queue = await channel.declare_queue("generate_pic", durable=True)
+        
+        async for message in queue:
+            async with message.process():
+                print("Received message:", message.body.decode())
+                
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(consume_messages())
