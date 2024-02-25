@@ -32,7 +32,8 @@ async def create_table(conn):
     title TEXT,
     description TEXT,
     fanfic_text TEXT,
-    pic TEXT
+    pic TEXT,
+    tegs TEXT
     );'''
     await conn.execute(query)
     
@@ -50,6 +51,19 @@ def generate_pic_queue(id: int, description: str):
         logging.error(e, exc_info=True)
 
 
+def generate_tags_queue(id: int, fanfic_text: str):
+    message_body = str({'id': id, 'fanfic_text':  fanfic_text})
+    try:
+        with pika.BlockingConnection(pika.ConnectionParameters(host=rabbit_host)) as connection:
+            channel = connection.channel()
+            channel.queue_declare(queue='generate_tags')
+            channel.basic_publish(exchange='',
+                            routing_key='generate_tags',
+                            body=message_body)
+            logging.warning(f'{message_body} sent!')
+    except Exception as e:
+        logging.error(e, exc_info=True)
+
 
 @app.post('/create_text')
 async def create_text(data: Text):
@@ -64,6 +78,7 @@ async def create_text(data: Text):
         await conn.close()
         
         generate_pic_queue(inserted_id, data.description)
+        generate_tags_queue(inserted_id, data.fanfic_text)
         # result = requests.get(f'{url}/generate_pic', params={'id': inserted_id, 'prompt': data.description})
         # logging.warning(result)
         return inserted_id
@@ -85,7 +100,7 @@ async def get_text(id: int):
             await conn.close()
         else:
             conn = await asyncpg.connect(user=db_user, password=db_password, database=db_name, host=db_host)
-            row = await conn.fetchrow(f'SELECT title, description, fanfic_text FROM texts WHERE id = $1', id)
+            row = await conn.fetchrow(f'SELECT title, description, fanfic_text, tags FROM texts WHERE id = $1', id)
             await conn.close()
             row = dict(row)
             row['pic'] = check
