@@ -116,9 +116,10 @@ async def edit_text(data: Text, id: int):
     except Exception as e:
         logging.error(e, exc_info=True)
         
-@app.put('/generate_pic')
-async def generate_pic(id: int, description: str):
-    return None
+@app.put('/regenerate_pic')
+async def regenerate_pic(id: int, description: str):
+    return generate_pic_queue(id, description)
+    
 
 
 @app.delete('/delete_text')
