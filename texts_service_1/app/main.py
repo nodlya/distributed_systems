@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import logging
 from fastapi.responses import JSONResponse
+from fastapi.responses import Response
 from uuid import uuid4
 import pybase64
 import asyncpg
@@ -11,6 +12,7 @@ import requests
 import pika
 
 app = FastAPI()
+headers = {"n_api": "1"}
 
 db_user = os.getenv("DB_USER")
 db_password = os.getenv("DB_PASSWORD")
@@ -36,6 +38,7 @@ async def create_table(conn):
     tegs TEXT
     );'''
     await conn.execute(query)
+
     
 def generate_pic_queue(id: int, description: str):
     message_body = str({'id': id, 'description':  description})
@@ -81,7 +84,7 @@ async def create_text(data: Text):
         generate_tags_queue(inserted_id, data.fanfic_text)
         # result = requests.get(f'{url}/generate_pic', params={'id': inserted_id, 'prompt': data.description})
         # logging.warning(result)
-        return inserted_id
+        return JSONResponse(headers=headers, content=inserted_id)
     except Exception as e:
         logging.error(e, exc_info=True)
     
@@ -100,10 +103,11 @@ async def get_text(id: int):
             await conn.close()
         else:
             conn = await asyncpg.connect(user=db_user, password=db_password, database=db_name, host=db_host)
-            row = await conn.fetchrow(f'SELECT title, description, fanfic_text, tags FROM texts WHERE id = $1', id)
+            row = await conn.fetchrow(f'SELECT title, description, fanfic_text, tegs FROM texts WHERE id = $1', id)
             await conn.close()
             row = dict(row)
             row['pic'] = check
+            row['n_api'] = headers.get('n_api')
         return row
     except Exception as e:
         logging.error(e, exc_info=True)
@@ -128,6 +132,7 @@ async def edit_text(data: Text, id: int):
                 SET fanfic_text = $1
                 WHERE id=$2''', data.fanfic_text, id)
         await conn.close()
+        return JSONResponse(headers=headers, content='edited')
     except Exception as e:
         logging.error(e, exc_info=True)
         
@@ -135,6 +140,11 @@ async def edit_text(data: Text, id: int):
 async def regenerate_pic(id: int, description: str):
     return generate_pic_queue(id, description)
     
+
+@app.get('/see_pic')
+async def get_pic_from_redis(id: int):
+    image = pybase64.b64decode(r.get(id))
+    return Response(content=image, media_type='image/png')
 
 
 @app.delete('/delete_text')
