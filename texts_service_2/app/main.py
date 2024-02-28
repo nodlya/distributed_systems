@@ -10,9 +10,19 @@ import asyncpg
 import redis
 import requests
 import pika
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI()
 headers = {"n_api": "2"}
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Укажите здесь домены, разрешенные для запросов, или "*", чтобы разрешить все домены
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],  # Укажите методы, разрешенные для запросов
+    allow_headers=["*"],  # Укажите здесь заголовки, разрешенные для запросов, или "*", чтобы разрешить все заголовки
+)
 
 db_user = os.getenv("DB_USER")
 db_password = os.getenv("DB_PASSWORD")
@@ -110,6 +120,7 @@ async def get_text(id: int):
         return row
     except Exception as e:
         logging.error(e, exc_info=True)
+
 
 @app.put('/edit_text/{id}')
 async def edit_text(data: Text, id: int):

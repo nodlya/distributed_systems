@@ -1,6 +1,36 @@
 version: '3'
 
 services:
+  client_service:
+    build:
+      context: ./client_service
+    ports:
+      - 3001:3001
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - API_URL=${API_URL}
+      - RABBIT_HOST=${RABBIT_HOST}
+      - REDIS_HOST=${REDIS_HOST}
+
+  tags_service:
+    build:
+      context: ./tegs_service
+    ports:
+      - 8004:8004
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - API_URL=${API_URL}
+      - RABBIT_HOST=${RABBIT_HOST}
+      - REDIS_HOST=${REDIS_HOST}
+
   texts_service_1:
     build: 
       context: ./texts_service_1

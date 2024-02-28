@@ -10,3 +10,4 @@ env/
 
 .vscode/
 *.code-workspace
+/payload-service/

@@ -15,6 +15,7 @@ import ast
 import aio_pika
 import asyncio
 import psycopg2
+from fastapi.middleware.cors import CORSMiddleware
 
 
 class Text(BaseModel):
@@ -66,6 +67,14 @@ class Text2ImageAPI:
             time.sleep(delay)
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Укажите здесь домены, разрешенные для запросов, или "*", чтобы разрешить все домены
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],  # Укажите методы, разрешенные для запросов
+    allow_headers=["*"],  # Укажите здесь заголовки, разрешенные для запросов, или "*", чтобы разрешить все заголовки
+)
 
 db_user = os.getenv("DB_USER")
 db_password = os.getenv("DB_PASSWORD")
