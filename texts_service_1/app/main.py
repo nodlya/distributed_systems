@@ -10,9 +10,19 @@ import asyncpg
 import redis
 import requests
 import pika
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI()
 headers = {"n_api": "1"}
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Укажите здесь домены, разрешенные для запросов, или "*", чтобы разрешить все домены
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],  # Укажите методы, разрешенные для запросов
+    allow_headers=["*"],  # Укажите здесь заголовки, разрешенные для запросов, или "*", чтобы разрешить все заголовки
+)
 
 db_user = os.getenv("DB_USER")
 db_password = os.getenv("DB_PASSWORD")
